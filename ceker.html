@@ -1,1 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Checker - Clean Version</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .die { background-color: #ef4444; color: white; }
+        .live { background-color: #22c55e; color: white; }
+        .unknown { background-color: #64748b; color: white; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <div class="max-w-5xl mx-auto">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+                PREMIUM CHECKER
+            </h1>
+            <p class="text-slate-400 mt-2">Versi bersih tanpa iklan dan pelacak.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Input Section -->
+            <div class="lg:col-span-2 space-y-4">
+                <div class="glass p-6 rounded-2xl shadow-xl">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">
+                        Masukkan Data (Format: CARD|MONTH|YEAR|CVV)
+                    </label>
+                    <textarea 
+                        id="inputData"
+                        class="w-full h-64 bg-slate-900/50 border border-slate-700 rounded-xl p-4 mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+                        placeholder="4123456789012345|01|2025|123&#10;5123456789012345|12|2026|999"
+                    ></textarea>
+                    
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        <button onclick="startCheck()" id="btnStart" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-2.5 rounded-lg font-semibold transition-all flex-1 md:flex-none">
+                            MULAI CEK
+                        </button>
+                        <button onclick="stopCheck()" id="btnStop" class="bg-slate-700 hover:bg-slate-600 text-white px-8 py-2.5 rounded-lg font-semibold transition-all flex-1 md:flex-none" disabled>
+                            BERHENTI
+                        </button>
+                        <button onclick="clearAll()" class="bg-red-900/30 hover:bg-red-900/50 text-red-400 px-8 py-2.5 rounded-lg font-semibold border border-red-900/50 transition-all flex-1 md:flex-none">
+                            HAPUS SEMUA
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Results -->
+                <div class="glass p-6 rounded-2xl shadow-xl border-l-4 border-emerald-500">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-emerald-400 font-bold flex items-center gap-2">
+                            <span class="relative flex h-3 w-3">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                            </span>
+                            LIVE (BERHASIL)
+                        </h2>
+                        <span id="countLive" class="bg-emerald-900/50 text-emerald-400 px-3 py-1 rounded-full text-xs font-mono">0</span>
+                    </div>
+                    <div id="liveList" class="space-y-2 max-h-48 overflow-y-auto mono text-xs">
+                        <p class="text-slate-500 italic">Belum ada data live...</p>
+                    </div>
+                </div>
+
+                <!-- Die Results -->
+                <div class="glass p-6 rounded-2xl shadow-xl border-l-4 border-red-500">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-red-400 font-bold">DIE (GAGAL)</h2>
+                        <span id="countDie" class="bg-red-900/50 text-red-400 px-3 py-1 rounded-full text-xs font-mono">0</span>
+                    </div>
+                    <div id="dieList" class="space-y-2 max-h-48 overflow-y-auto mono text-xs">
+                        <p class="text-slate-500 italic">Belum ada data die...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar / Stats -->
+            <div class="space-y-6">
+                <div class="glass p-6 rounded-2xl shadow-xl">
+                    <h3 class="text-slate-300 font-semibold mb-4">Statistik Real-time</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400 text-sm">Total Proses</span>
+                            <span id="statTotal" class="mono text-blue-400">0</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400 text-sm">Tersisa</span>
+                            <span id="statRem" class="mono text-slate-300">0</span>
+                        </div>
+                        <div class="w-full bg-slate-800 rounded-full h-2 mt-4">
+                            <div id="progressBar" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass p-6 rounded-2xl shadow-xl">
+                    <h3 class="text-slate-300 font-semibold mb-2 text-sm">Informasi Checker</h3>
+                    <ul class="text-xs text-slate-400 space-y-2 list-disc pl-4">
+                        <li>Algoritma validasi Luhn disertakan.</li>
+                        <li>Proses simulasi asinkronus (kecepatan tinggi).</li>
+                        <li>Privasi terjaga: Data tidak dikirim ke server iklan.</li>
+                        <li>Format yang didukung: 16 digit angka, MM|YYYY, CVV.</li>
+                    </ul>
+                </div>
+
+                <div id="logConsole" class="bg-black/40 p-4 rounded-xl border border-slate-800 h-40 overflow-y-auto mono text-[10px] text-emerald-500">
+                    <div>> System initialized...</div>
+                    <div>> Waiting for input...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isChecking = false;
+        let queue = [];
+        let stats = { live: 0, die: 0, total: 0, processed: 0 };
+
+        function log(msg) {
+            const console = document.getElementById('logConsole');
+            const div = document.createElement('div');
+            div.textContent = `> ${msg}`;
+            console.appendChild(div);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function validateLuhn(number) {
+            let sum = 0;
+            let shouldDouble = false;
+            for (let i = number.length - 1; i >= 0; i--) {
+                let digit = parseInt(number.charAt(i));
+                if (shouldDouble) {
+                    if ((digit *= 2) > 9) digit -= 9;
+                }
+                sum += digit;
+                shouldDouble = !shouldDouble;
+            }
+            return (sum % 10) === 0;
+        }
+
+        function updateUI() {
+            document.getElementById('countLive').textContent = stats.live;
+            document.getElementById('countDie').textContent = stats.die;
+            document.getElementById('statTotal').textContent = stats.total;
+            document.getElementById('statRem').textContent = stats.total - stats.processed;
+            
+            const progress = stats.total > 0 ? (stats.processed / stats.total) * 100 : 0;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+        }
+
+        async function startCheck() {
+            const input = document.getElementById('inputData').value.trim();
+            if (!input) return alert("Masukkan data terlebih dahulu!");
+
+            const lines = input.split('\n').filter(l => l.trim() !== "");
+            queue = lines;
+            stats = { live: 0, die: 0, total: lines.length, processed: 0 };
+            isChecking = true;
+
+            document.getElementById('btnStart').disabled = true;
+            document.getElementById('btnStop').disabled = false;
+            document.getElementById('liveList').innerHTML = "";
+            document.getElementById('dieList').innerHTML = "";
+            
+            log(`Starting check for ${stats.total} lines...`);
+            updateUI();
+            processQueue();
+        }
+
+        function stopCheck() {
+            isChecking = false;
+            document.getElementById('btnStart').disabled = false;
+            document.getElementById('btnStop').disabled = true;
+            log("Process stopped by user.");
+        }
+
+        function clearAll() {
+            stopCheck();
+            document.getElementById('inputData').value = "";
+            document.getElementById('liveList').innerHTML = '<p class="text-slate-500 italic">Belum ada data live...</p>';
+            document.getElementById('dieList').innerHTML = '<p class="text-slate-500 italic">Belum ada data die...</p>';
+            stats = { live: 0, die: 0, total: 0, processed: 0 };
+            updateUI();
+            log("All data cleared.");
+        }
+
+        async function processQueue() {
+            while (isChecking && queue.length > 0) {
+                const currentLine = queue.shift();
+                stats.processed++;
+                
+                // Simulate API/Validation logic
+                const parts = currentLine.split('|');
+                const cardNumber = parts[0]?.trim();
+                
+                // Realistic delay simulation
+                await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 500));
+
+                const isValid = cardNumber && cardNumber.length >= 15 && validateLuhn(cardNumber);
+                
+                if (isValid) {
+                    addResult('liveList', currentLine, 'LIVE - Approved');
+                    stats.live++;
+                    log(`Success: ${cardNumber.substring(0,4)}...`);
+                } else {
+                    addResult('dieList', currentLine, 'DIE - Invalid Format');
+                    stats.die++;
+                }
+
+                updateUI();
+                
+                if (queue.length === 0) {
+                    stopCheck();
+                    log("All tasks completed.");
+                }
+            }
+        }
+
+        function addResult(containerId, data, statusMsg) {
+            const container = document.getElementById(containerId);
+            if (container.querySelector('p.italic')) container.innerHTML = "";
+            
+            const div = document.createElement('div');
+            div.className = "flex justify-between items-center p-2 bg-slate-800/40 rounded border border-slate-700/50 mb-1 animate-fade-in";
+            
+            const isLive = containerId === 'liveList';
+            const badgeClass = isLive ? 'live' : 'die';
+            
+            div.innerHTML = `
+                <span class="text-slate-300 font-mono">${data}</span>
+                <span class="status-badge ${badgeClass}">${statusMsg}</span>
+            `;
+            
+            container.prepend(div);
+        }
+    </script>
+
+    <style>
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out forwards;
+        }
+    </style>
+</body>
+</html>
+
 
